@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Deepchox - Personal Execution OS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Canvas -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Floating Navigation -->
+    <div class="floating-nav">
+        <div class="nav-dots" id="navDots"></div>
+        <div class="nav-arrows">
+            <button class="nav-arrow nav-arrow-prev" id="navPrev" aria-label="Previous section">
+                <span>‹</span>
+            </button>
+            <button class="nav-arrow nav-arrow-next" id="navNext" aria-label="Next section">
+                <span>›</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Section Menu -->
+    <button class="floating-menu-btn" id="floatingMenuBtn" aria-label="Open menu">
+        <span class="menu-icon">☰</span>
+    </button>
+
+    <div class="floating-menu" id="floatingMenu">
+        <div class="menu-header">
+            <h3>Navigate</h3>
+            <button class="menu-close" id="menuClose">×</button>
+        </div>
+        <div class="menu-items" id="menuItems">
+            <!-- Menu items will be generated dynamically -->
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- MAIN DASHBOARD - Simplified Interface -->
+        <section id="dashboard" class="section active" style="display: block !important;">
+            <div class="section-inner">
+                <div class="dashboard-header-simple">
+                    <h1 class="dashboard-title">Deepchox</h1>
+                    <div class="dashboard-date" id="dashboardDate"></div>
+                </div>
+
+                <!-- 1. Add Tasks Section -->
+                <div class="main-section-card">
+                    <h2 class="main-section-title">Add Tasks</h2>
+                    <div class="task-input-group">
+                        <input type="text" id="mainTaskInput" class="main-task-input" placeholder="Enter a task...">
+                        <button id="mainAddTaskBtn" class="btn-primary">Add</button>
+                    </div>
+                    <div id="mainTasksList" class="main-tasks-list"></div>
+                </div>
+
+                <!-- 2. Quick Notes Section -->
+                <div class="main-section-card">
+                    <h2 class="main-section-title">Quick Notes</h2>
+                    <textarea id="mainQuickNotes" class="main-quick-notes" placeholder="Write your notes, thoughts, or plans here..."></textarea>
+                    <div class="quick-notes-footer">
+                        <button id="saveQuickNotesBtn" class="btn-secondary">Save Notes</button>
+                        <span class="notes-count" id="notesCharCount">0 characters</span>
+                    </div>
+                </div>
+
+                <!-- 3. Documentation Section -->
+                <div class="main-section-card">
+                    <h2 class="main-section-title">Documentation</h2>
+                    <div class="docs-preview">
+                        <div class="docs-summary" id="mainDocsSummary">
+                            <p class="docs-text">No documentation yet</p>
+                        </div>
+                        <button class="btn-primary" id="mainViewDocsBtn">View Documentation →</button>
+                    </div>
+                </div>
+
+                <!-- 4. Analyzer Section -->
+                <div class="main-section-card">
+                    <h2 class="main-section-title">Analyzer</h2>
+                    <div class="analyzer-preview">
+                        <div class="analyzer-stats-mini">
+                            <div class="mini-stat">
+                                <div class="mini-stat-value" id="mainMomentum">Stable</div>
+                                <div class="mini-stat-label">Momentum</div>
+                            </div>
+                            <div class="mini-stat">
+                                <div class="mini-stat-value" id="mainProgress">0%</div>
+                                <div class="mini-stat-label">Progress</div>
+                            </div>
+                        </div>
+                        <button class="btn-primary" id="mainViewAnalyzerBtn">View Analyzer →</button>
+                    </div>
+                </div>
+
+                <!-- 5. AI Organizer Section -->
+                <div class="main-section-card">
+                    <h2 class="main-section-title">AI Organizer</h2>
+                    <div class="organizer-preview">
+                        <div class="organizer-status" id="mainOrganizerStatus">
+                            <p>Ready to organize tasks</p>
+                        </div>
+                        <div class="organizer-actions">
+                            <button class="btn-primary" id="mainOrganizeBtn">Organize Tasks</button>
+                            <button class="btn-secondary" id="mainViewWorkflowBtn">View Workflow →</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Calendar Widget -->
+                <div class="main-section-card">
+                    <h2 class="main-section-title">Calendar</h2>
+                    <div id="mainCalendarWidget" class="main-calendar-widget">
+                        <!-- Calendar will be rendered here -->
+                    </div>
+                </div>
+
+                <!-- Secondary Features Link -->
+                <div class="secondary-features-link">
+                    <button class="btn-secondary" id="viewMoreFeaturesBtn">More Features →</button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- FEATURES PAGE (All Sections) -->
+        <section id="features" class="section">
+            <div class="section-inner">
+                <div class="features-page-header">
+                    <h1 class="features-page-title">All Features</h1>
+                    <p class="features-page-subtitle">Access all sections and tools</p>
+                </div>
+
+                <div class="features-grid">
+                    <!-- Today Section -->
+                    <div class="feature-card" data-section="today">
+                        <div class="feature-card-icon">📝</div>
+                        <h3 class="feature-card-title">Today</h3>
+                        <p class="feature-card-desc">Add tasks and set context</p>
+                        <div class="feature-card-preview" id="featureTodayPreview">
+                            <span class="preview-value" id="featureTodayCount">0</span> tasks
+                        </div>
+                    </div>
+
+                    <!-- Workflow Section -->
+                    <div class="feature-card" data-section="workflow">
+                        <div class="feature-card-icon">⚙️</div>
+                        <h3 class="feature-card-title">Workflow</h3>
+                        <p class="feature-card-desc">Plan and execute your day</p>
+                        <div class="feature-card-preview" id="featureWorkflowPreview">
+                            <span class="preview-value" id="featureWorkflowStatus">No workflow</span>
+                        </div>
+                    </div>
+
+                    <!-- Analyzer Section -->
+                    <div class="feature-card" data-section="analyzer">
+                        <div class="feature-card-icon">📊</div>
+                        <h3 class="feature-card-title">Analyzer</h3>
+                        <p class="feature-card-desc">Live execution insights</p>
+                        <div class="feature-card-preview" id="featureAnalyzerPreview">
+                            <span class="preview-value" id="featureAnalyzerMomentum">Stable</span>
+                        </div>
+                    </div>
+
+                    <!-- Calendar Section -->
+                    <div class="feature-card" data-section="calendar">
+                        <div class="feature-card-icon">📅</div>
+                        <h3 class="feature-card-title">Calendar</h3>
+                        <p class="feature-card-desc">View your activity history</p>
+                        <div class="feature-card-preview" id="featureCalendarPreview">
+                            <span class="preview-value" id="featureCalendarDays">0</span> active days
+                        </div>
+                    </div>
+
+                    <!-- Insights Section -->
+                    <div class="feature-card" data-section="insights">
+                        <div class="feature-card-icon">💡</div>
+                        <h3 class="feature-card-title">Insights</h3>
+                        <p class="feature-card-desc">Patterns and recommendations</p>
+                        <div class="feature-card-preview" id="featureInsightsPreview">
+                            <span class="preview-value" id="featureInsightsCount">0</span> insights
+                        </div>
+                    </div>
+
+                    <!-- Snapshot Section -->
+                    <div class="feature-card" data-section="snapshot">
+                        <div class="feature-card-icon">📸</div>
+                        <h3 class="feature-card-title">Snapshot</h3>
+                        <p class="feature-card-desc">Quick overview of your day</p>
+                        <div class="feature-card-preview" id="featureSnapshotPreview">
+                            <span class="preview-value">View</span>
+                        </div>
+                    </div>
+
+                    <!-- Documentation Section -->
+                    <div class="feature-card" data-section="documentation">
+                        <div class="feature-card-icon">📚</div>
+                        <h3 class="feature-card-title">Documentation</h3>
+                        <p class="feature-card-desc">Save and review your work</p>
+                        <div class="feature-card-preview" id="featureDocsPreview">
+                            <span class="preview-value" id="featureDocsCount">0</span> entries
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 0: SNAPSHOT -->
+        <section id="snapshot" class="section">
+            <div class="section-inner">
+                <div class="snapshot-header">
+                    <div class="snapshot-title-group">
+                        <h1 class="snapshot-title">SNAPSHOT</h1>
+                        <div class="snapshot-date" id="snapshotDate"></div>
+                    </div>
+                    <button class="snapshot-close" id="snapshotCloseBtn">Close</button>
+                </div>
+
+                <div class="snapshot-content">
+                    <!-- Focus Areas & Load -->
+                    <div class="snapshot-top-row">
+                        <div class="snapshot-focus">
+                            <div class="snapshot-section-header">
+                                <span class="snapshot-label">FOCUS AREAS</span>
+                            </div>
+                            <div class="focus-pills" id="focusPills">
+                                <!-- Focus areas will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div class="snapshot-load">
+                            <div class="snapshot-section-header">
+                                <span class="snapshot-label">LOAD</span>
+                            </div>
+                            <div class="load-display">
+                                <div class="load-percentage" id="loadPercentage">0%</div>
+                                <div class="load-bar-container">
+                                    <div class="load-bar-fill" id="loadBarFill"></div>
+                                </div>
+                                <div class="load-message" id="loadMessage">Calculating...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Planned Blocks -->
+                    <div class="snapshot-blocks">
+                        <div class="snapshot-section-header">
+                            <span class="snapshot-label">Planned Blocks</span>
+                            <span class="blocks-count" id="blocksCount">0</span>
+                        </div>
+                        <div class="blocks-timeline" id="blocksTimeline">
+                            <!-- Planned blocks will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="snapshot-footer">
+                    <button class="snapshot-edit-btn" id="snapshotEditBtn">
+                        <span>Edit Plan</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 1: TODAY -->
+        <section id="today" class="section">
+            <div class="section-inner">
+                <!-- Context Selection -->
+                <div id="contextStep" class="step">
+                    <h2 class="section-title">Choose Context</h2>
+                    <p class="section-subtitle">Select your execution mode</p>
+                    <div class="context-grid">
+                        <button class="context-btn" data-context="focus">
+                            <span class="context-label">Focus & Think</span>
+                        </button>
+                        <button class="context-btn" data-context="build">
+                            <span class="context-label">Make & Build</span>
+                        </button>
+                        <button class="context-btn" data-context="learn">
+                            <span class="context-label">Learn & Explore</span>
+                        </button>
+                        <button class="context-btn" data-context="light">
+                            <span class="context-label">Light & Easy</span>
+                        </button>
+                        <button class="context-btn" data-context="organise">
+                            <span class="context-label">Organise</span>
+                        </button>
+                        <button class="context-btn" data-context="rest">
+                            <span class="context-label">Rest & Reset</span>
+                        </button>
+                    </div>
+                    <button id="skipContextBtn" class="btn-secondary">Skip & Add Tasks</button>
+                </div>
+
+                <!-- Task Entry -->
+                <div id="taskEntryStep" class="step active">
+                    <div class="task-header">
+                        <h2 class="section-title">Add Tasks</h2>
+                        <button id="changeContextBtn" class="context-toggle-btn">Change Context</button>
+                    </div>
+                    <div class="task-entry-container">
+                        <div class="input-group">
+                            <input type="text" id="taskInput" class="task-input" placeholder="What needs to be done?">
+                            <button id="addTaskBtn" class="btn-primary">Add</button>
+                        </div>
+                        <div id="rawTasksList" class="tasks-list"></div>
+                        <div class="task-actions" id="taskActions" style="display: none;">
+                            <button id="organiseBtn" class="btn-primary">Organise Tasks</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auto-Organise -->
+                <div id="organiseStep" class="step">
+                    <h2 class="section-title">Review & Organise</h2>
+                    <div id="organisedTasksList" class="organised-tasks-list"></div>
+                    <div class="action-buttons">
+                        <button id="confirmOrganiseBtn" class="btn-primary">Confirm & Send to Workflow</button>
+                        <button id="backToEntryBtn" class="btn-secondary">Edit Tasks</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: WORKFLOW -->
+        <section id="workflow" class="section">
+            <div class="section-inner">
+                <!-- Workflow Tabs -->
+                <div class="workflow-tabs">
+                    <button class="workflow-tab active" data-tab="workflow">Workflow</button>
+                    <button class="workflow-tab" data-tab="workload">Workload</button>
+                </div>
+
+                <!-- Workflow Tab Content -->
+                <div class="workflow-tab-content active" id="workflowTab">
+                
+                <!-- Simplified Workflow Header -->
+                <div class="workflow-simple-header">
+                    <div class="workflow-title-section">
+                        <h2 class="workflow-main-title" id="workflowName">Today's Workflow</h2>
+                        <div class="workflow-mode-badge" id="modeIndicator">
+                            <span id="currentModeText">AI Mode</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Key Stats - Simple & Clear -->
+                    <div class="workflow-key-stats">
+                        <div class="key-stat">
+                            <div class="key-stat-value" id="totalTasksStat">0</div>
+                            <div class="key-stat-label">Total Tasks</div>
+                        </div>
+                        <div class="key-stat">
+                            <div class="key-stat-value" id="completedStat">0</div>
+                            <div class="key-stat-label">Completed</div>
+                        </div>
+                        <div class="key-stat">
+                            <div class="key-stat-value" id="progressStat">0%</div>
+                            <div class="key-stat-label">Progress</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="workflow-progress-container">
+                        <div class="workflow-progress-bar">
+                            <div class="progress-fill" id="workflowProgressFill"></div>
+                        </div>
+                        <div class="workflow-status-text" id="workflowStatus">Ready to start</div>
+                    </div>
+                </div>
+                
+                <!-- Mode Toggle - Compact -->
+                <div class="mode-toggle-container-simple">
+                    <button class="mode-btn-simple" id="aiModeBtn" data-mode="ai">
+                        <span class="mode-icon">🤖</span>
+                        <span class="mode-label">AI</span>
+                    </button>
+                    <button class="mode-btn-simple" id="manualModeBtn" data-mode="manual">
+                        <span class="mode-icon">✋</span>
+                        <span class="mode-label">Manual</span>
+                    </button>
+                </div>
+                
+                <!-- Quick Notes & Plan Section (Available in both AI and Manual modes) -->
+                <div id="manualQuickNotes" class="quick-notes-section">
+                    <h3 class="subsection-title">Quick Notes & Plan</h3>
+                    <textarea id="quickNotesInput" class="quick-notes-input" placeholder="Write your plan, notes, or workflow structure here..."></textarea>
+                    <div class="quick-notes-actions">
+                        <button id="createManualWorkflowBtn" class="btn-primary">Create Workflow</button>
+                        <button id="clearNotesBtn" class="btn-secondary">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Workflow Graph - Simplified -->
+                <div class="workflow-graph-container-simple">
+                    <div id="workflowGraph" class="workflow-graph">
+                        <canvas id="workflowCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Workflow Phases - Simplified Cards -->
+                <div class="workflow-phases-simple">
+                    <div class="phase-card" data-phase="planning">
+                        <div class="phase-card-header">
+                            <h3 class="phase-title">Planning</h3>
+                            <div class="phase-info">
+                                <span class="phase-count" id="planningCount">0 tasks</span>
+                                <span class="phase-progress-badge" id="planningProgress">0%</span>
+                            </div>
+                        </div>
+                        <div class="phase-card-content">
+                            <div class="phase-tasks" id="planningTasks" data-phase="planning"></div>
+                        </div>
+                    </div>
+
+                    <div class="phase-card" data-phase="execution">
+                        <div class="phase-card-header">
+                            <h3 class="phase-title">Execution</h3>
+                            <div class="phase-info">
+                                <span class="phase-count" id="executionCount">0 tasks</span>
+                                <span class="phase-progress-badge" id="executionProgress">0%</span>
+                            </div>
+                        </div>
+                        <div class="phase-card-content">
+                            <div class="phase-tasks" id="executionTasks" data-phase="execution"></div>
+                        </div>
+                    </div>
+
+                    <div class="phase-card" data-phase="cooldown">
+                        <div class="phase-card-header">
+                            <h3 class="phase-title">Cooldown</h3>
+                            <div class="phase-info">
+                                <span class="phase-count" id="cooldownCount">0 tasks</span>
+                                <span class="phase-progress-badge" id="cooldownProgress">0%</span>
+                            </div>
+                        </div>
+                        <div class="phase-card-content">
+                            <div class="phase-tasks" id="cooldownTasks" data-phase="cooldown"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Workflow Actions - Simplified -->
+                <div class="workflow-actions-simple">
+                    <button id="endPhaseBtn" class="btn-primary">End Phase</button>
+                </div>
+            </div>
+            
+            <!-- Workload Tab Content -->
+            <div class="workflow-tab-content" id="workloadTab">
+                <!-- Workload Ring Meter -->
+                <div class="workload-ring-container">
+                    <div class="workload-ring-wrapper">
+                        <canvas id="workloadRing" class="workload-ring"></canvas>
+                        <div class="workload-ring-center">
+                            <div class="workload-level" id="workloadLevel">Balanced</div>
+                            <div class="workload-subtitle">Tap for details</div>
+                        </div>
+                    </div>
+                    <div class="workload-explanation" id="workloadExplanation" style="display: none;">
+                        <p id="workloadDetails"></p>
+                    </div>
+                </div>
+                
+                <!-- Load Breakdown -->
+                <div class="load-breakdown">
+                    <h3 class="subsection-title">Load Breakdown</h3>
+                    <div class="breakdown-items" id="breakdownItems">
+                        <!-- Breakdown items will be generated here -->
+                    </div>
+                </div>
+                
+                <!-- Task Lists by Effort -->
+                <div class="workload-task-lists">
+                    <div class="workload-task-group" id="heavyTasksGroup">
+                        <div class="workload-group-header">
+                            <h4>Heavy Tasks</h4>
+                            <span class="task-count" id="heavyTasksCount">0</span>
+                        </div>
+                        <div class="workload-task-list" id="heavyTasksList"></div>
+                    </div>
+                    
+                    <div class="workload-task-group" id="mediumTasksGroup">
+                        <div class="workload-group-header">
+                            <h4>Medium Tasks</h4>
+                            <span class="task-count" id="mediumTasksCount">0</span>
+                        </div>
+                        <div class="workload-task-list" id="mediumTasksList"></div>
+                    </div>
+                    
+                    <div class="workload-task-group" id="lightTasksGroup">
+                        <div class="workload-group-header">
+                            <h4>Light Tasks</h4>
+                            <span class="task-count" id="lightTasksCount">0</span>
+                        </div>
+                        <div class="workload-task-list" id="lightTasksList"></div>
+                    </div>
+                </div>
+                
+                <!-- AI Adjustment Suggestions -->
+                <div class="workload-suggestions" id="workloadSuggestions" style="display: none;">
+                    <h3 class="subsection-title">AI Suggestions</h3>
+                    <div id="suggestionsList"></div>
+                </div>
+                
+                <!-- Daily Commitment -->
+                <div class="commitment-section">
+                    <label class="commitment-label">Daily Commitment</label>
+                    <input type="text" id="dailyCommitmentInput" class="commitment-input" placeholder="What's your focus for today?">
+                    <div class="commitment-status" id="commitmentStatus"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: LIVE ANALYZER -->
+        <section id="analyzer" class="section">
+            <div class="section-inner">
+                <h2 class="section-title">Live Analyzer</h2>
+                
+                <!-- Productivity Level Meter -->
+                <div class="productivity-meter-container">
+                    <div class="productivity-meter-wrapper">
+                        <canvas id="productivityMeter" class="productivity-meter"></canvas>
+                        <div class="productivity-center">
+                            <div class="productivity-level" id="productivityLevel">Stable</div>
+                            <div class="productivity-subtitle">Tap for details</div>
+                        </div>
+                    </div>
+                    <div class="productivity-explanation" id="productivityExplanation" style="display: none;">
+                        <p id="productivityDetails"></p>
+                    </div>
+                </div>
+
+                <!-- Momentum vs Friction -->
+                <div class="momentum-friction-container">
+                    <div class="momentum-friction-item">
+                        <div class="mf-label">Momentum</div>
+                        <div class="mf-bar-container">
+                            <div class="mf-bar momentum-bar" id="momentumBar">
+                                <div class="mf-fill momentum-fill" id="momentumFill"></div>
+                            </div>
+                            <div class="mf-value" id="momentumValue">—</div>
+                        </div>
+                    </div>
+                    <div class="momentum-friction-item">
+                        <div class="mf-label">Friction</div>
+                        <div class="mf-bar-container">
+                            <div class="mf-bar friction-bar" id="frictionBar">
+                                <div class="mf-fill friction-fill" id="frictionFill"></div>
+                            </div>
+                            <div class="mf-value" id="frictionValue">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Graph -->
+                <div class="execution-graph-section">
+                    <h3 class="subsection-title">Live Execution Graph</h3>
+                    <p class="graph-subtitle">Track your execution momentum over time</p>
+                    <div class="graph-container">
+                        <canvas id="executionGraph"></canvas>
+                        <div class="graph-overlay" id="graphOverlay"></div>
+                    </div>
+                </div>
+
+                <!-- Execution Pulse Cards -->
+                <div class="pulse-cards-container">
+                    <h3 class="subsection-title">Execution Pulse</h3>
+                    <div id="pulseCards" class="pulse-cards">
+                        <div class="pulse-cards-wrapper" id="pulseCardsWrapper"></div>
+                    </div>
+                </div>
+
+                <!-- Primary Action -->
+                <div class="analyzer-action">
+                    <button id="rebalanceTodayBtn" class="btn-primary">Rebalance Today</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: CALENDAR -->
+        <section id="calendar" class="section">
+            <div class="section-inner">
+                <h2 class="section-title">Calendar</h2>
+                
+                <!-- Calendar Stats -->
+                <div class="calendar-stats">
+                    <div class="calendar-stat-item">
+                        <div class="stat-value" id="calendarTotalDays">0</div>
+                        <div class="stat-label">Active Days</div>
+                    </div>
+                    <div class="calendar-stat-item">
+                        <div class="stat-value" id="calendarCompletionRate">0%</div>
+                        <div class="stat-label">Avg Completion</div>
+                    </div>
+                    <div class="calendar-stat-item">
+                        <div class="stat-value" id="calendarStreak">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                </div>
+                
+                <!-- Month View -->
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button id="prevMonthBtn" class="calendar-nav-btn">
+                            <span>‹</span>
+                        </button>
+                        <div class="calendar-month-wrapper">
+                            <div id="currentMonth" class="calendar-month"></div>
+                            <button id="todayBtn" class="calendar-today-btn">Today</button>
+                        </div>
+                        <button id="nextMonthBtn" class="calendar-nav-btn">
+                            <span>›</span>
+                        </button>
+                    </div>
+                    <div id="calendarGrid" class="calendar-grid"></div>
+                </div>
+
+                <!-- Day Summary Sheet -->
+                <div id="daySummarySheet" class="day-summary-sheet">
+                    <div class="sheet-drag-handle"></div>
+                    <div class="sheet-header">
+                        <div class="sheet-header-content">
+                            <h3 id="summaryDate" class="summary-date-title"></h3>
+                            <div id="summaryDayStats" class="summary-day-stats"></div>
+                        </div>
+                        <button id="closeSummaryBtn" class="close-btn">×</button>
+                    </div>
+                    <div id="summaryContent" class="summary-content">
+                        <div class="summary-loading">Loading day details...</div>
+                    </div>
+                    <div class="sheet-nav">
+                        <button id="prevDayBtn" class="sheet-nav-btn">‹ Previous</button>
+                        <button id="nextDayBtn" class="sheet-nav-btn">Next ›</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 6: INSIGHTS -->
+        <section id="insights" class="section">
+            <div class="section-inner">
+                <h2 class="section-title">Insights</h2>
+                
+                <!-- Pattern Cards -->
+                <div id="patternCards" class="pattern-cards"></div>
+
+                <!-- Execution Shape History -->
+                <div class="execution-shape-section">
+                    <h3 class="subsection-title">Execution Shape History</h3>
+                    <canvas id="shapeHistoryCanvas"></canvas>
+                </div>
+
+                <!-- Decision Debt Tracker -->
+                <div class="decision-debt-section">
+                    <h3 class="subsection-title">Decision Debt</h3>
+                    <div id="decisionDebtList" class="decision-debt-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 7: DOCUMENTATION -->
+        <section id="documentation" class="section">
+            <div class="section-inner">
+                <h2 class="section-title">Documentation</h2>
+                <p class="section-subtitle">Capture your day's work and reflections.</p>
+                
+                <!-- Today's Work Summary -->
+                <div class="doc-summary">
+                    <h3 class="subsection-title">Today's Work Summary</h3>
+                    <div id="docWorkSummary" class="doc-summary-content">
+                        <!-- Work summary will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Daily Reflection -->
+                <div class="doc-reflection">
+                    <h3 class="subsection-title">Daily Reflection</h3>
+                    <textarea 
+                        id="dailyReflection" 
+                        class="reflection-textarea" 
+                        placeholder="Write your thoughts, learnings, and reflections about today..."
+                        rows="8"
+                    ></textarea>
+                    <div class="reflection-actions">
+                        <button id="saveDocumentationBtn" class="btn-primary">Save Documentation</button>
+                        <button id="clearReflectionBtn" class="btn-secondary">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Documentation History -->
+                <div class="doc-history">
+                    <h3 class="subsection-title">Past Documentation</h3>
+                    <div id="docHistoryList" class="doc-history-list">
+                        <!-- Past documentation entries will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 8: QUICK VIEW -->
+        <section id="quickview" class="section">
+            <div class="section-inner">
+                <div class="quickview-header">
+                    <h2 class="section-title">Quick View</h2>
+                    <div class="quickview-time" id="quickviewTime"></div>
+                </div>
+
+                <!-- Status Cards -->
+                <div class="quickview-grid">
+                    <div class="quickview-card">
+                        <div class="card-value" id="quickTasksCount">0</div>
+                        <div class="card-label">Tasks</div>
+                    </div>
+                    <div class="quickview-card">
+                        <div class="card-value" id="quickCompletedCount">0</div>
+                        <div class="card-label">Done</div>
+                    </div>
+                    <div class="quickview-card">
+                        <div class="card-value" id="quickMomentum">—</div>
+                        <div class="card-label">Momentum</div>
+                    </div>
+                    <div class="quickview-card">
+                        <div class="card-value" id="quickProgress">0%</div>
+                        <div class="card-label">Progress</div>
+                    </div>
+                </div>
+
+                <!-- Next Actions -->
+                <div class="quickview-actions">
+                    <h3 class="subsection-title">Next Actions</h3>
+                    <div id="quickviewNextActions" class="actions-list">
+                        <!-- Next actions will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="quickview-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">Today's Focus</span>
+                        <span class="stat-value" id="quickFocus">None</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Workload</span>
+                        <span class="stat-value" id="quickWorkload">Balanced</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Active Workflow</span>
+                        <span class="stat-value" id="quickWorkflow">None</span>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quickview-buttons">
+                    <button class="quick-action-btn" id="quickAddTaskBtn">
+                        <span>Add Task</span>
+                    </button>
+                    <button class="quick-action-btn" id="quickViewWorkflowBtn">
+                        <span>View Workflow</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- AI Suggestions -->
+    <div id="flowmindSuggestions" class="flowmind-container"></div>
+
+    <!-- Version History Modal -->
+    <div id="versionHistoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Workflow History</h3>
+                <button id="closeVersionModal" class="close-btn">Close</button>
+            </div>
+            <div id="versionHistoryList" class="version-history-list"></div>
+        </div>
+    </div>
+
+    <script src="ai.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
