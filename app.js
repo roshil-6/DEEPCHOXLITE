@@ -19,6 +19,7 @@ const AppState = {
     todayWorkSummary: null,
     documentationHistory: {},
     aiMode: true,
+    projects: [], // Long-term projects with deadlines
     
     // ============================================
     // CORE METHODS
@@ -51,6 +52,7 @@ const AppState = {
             AppState.setupInsightsSection();
             AppState.setupDocumentationSection();
             AppState.setupQuickViewSection();
+            AppState.setupProjectsSection();
             AppState.setupFeaturesPage();
             AppState.initParticleCanvas();
             AppState.initFlowMind();
@@ -81,7 +83,8 @@ const AppState = {
                 dailyCommitment: AppState.dailyCommitment || '',
                 todayWorkSummary: AppState.todayWorkSummary,
                 documentationHistory: AppState.documentationHistory,
-                aiMode: AppState.aiMode
+                aiMode: AppState.aiMode,
+                projects: AppState.projects
             };
             localStorage.setItem('deepchox', JSON.stringify(data));
         } catch (e) {
@@ -173,8 +176,6 @@ const AppState = {
         AppState.currentSection = sectionId;
         
         // Update navigation
-        if (AppState.updateFloatingNavigation) AppState.updateFloatingNavigation();
-        if (AppState.updateFloatingMenu) AppState.updateFloatingMenu();
         if (AppState.updateBackButtons) AppState.updateBackButtons();
         
         // Update section content
@@ -511,7 +512,7 @@ const AppState = {
     },
     
     setupFloatingNavigation() {
-        const sections = ['dashboard', 'snapshot', 'today', 'workflow', 'analyzer', 'calendar', 'insights', 'documentation', 'features'];
+        const sections = ['dashboard', 'snapshot', 'today', 'workflow', 'analyzer', 'calendar', 'insights', 'documentation', 'projects', 'features'];
         const navDots = document.getElementById('navDots');
         const navPrev = document.getElementById('navPrev');
         const navNext = document.getElementById('navNext');
@@ -568,6 +569,7 @@ const AppState = {
             { id: 'calendar', label: 'Calendar', icon: '📅' },
             { id: 'insights', label: 'Insights', icon: '💡' },
             { id: 'documentation', label: 'Documentation', icon: '📚' },
+            { id: 'projects', label: 'Projects', icon: '🎯' },
             { id: 'features', label: 'Features', icon: '🔧' }
         ];
         
@@ -604,7 +606,7 @@ const AppState = {
         // Double-tap for next section
         let lastClick = 0;
         menuBtn.ondblclick = () => {
-            const sections = ['dashboard', 'snapshot', 'today', 'workflow', 'analyzer', 'calendar', 'insights', 'documentation', 'features'];
+            const sections = ['dashboard', 'snapshot', 'today', 'workflow', 'analyzer', 'calendar', 'insights', 'documentation', 'projects', 'features'];
             const currentIndex = sections.indexOf(AppState.currentSection);
             const nextIndex = (currentIndex + 1) % sections.length;
             AppState.switchSection(sections[nextIndex]);
@@ -632,7 +634,7 @@ const AppState = {
             const deltaY = touchEndY - touchStartY;
             
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-                const sections = ['dashboard', 'snapshot', 'today', 'workflow', 'analyzer', 'calendar', 'insights', 'documentation', 'features'];
+                const sections = ['dashboard', 'snapshot', 'today', 'workflow', 'analyzer', 'calendar', 'insights', 'documentation', 'projects', 'features'];
                 const currentIndex = sections.indexOf(AppState.currentSection);
                 if (deltaX > 0 && currentIndex > 0) {
                     AppState.switchSection(sections[currentIndex - 1]);
@@ -721,6 +723,11 @@ const AppState = {
             const featureDocsCount = document.getElementById('featureDocsCount');
             if (featureDocsCount) {
                 featureDocsCount.textContent = Object.keys(AppState.documentationHistory).length;
+            }
+            
+            const featureProjectsCount = document.getElementById('featureProjectsCount');
+            if (featureProjectsCount) {
+                featureProjectsCount.textContent = AppState.projects.length;
             }
         };
     },
@@ -1745,6 +1752,761 @@ const AppState = {
         // Quick view functionality
     },
     
+    // ============================================
+    // PROJECTS SECTION - Long-Term Project Tracking
+    // ============================================
+    
+    setupProjectsSection() {
+        let editingProjectId = null;
+        
+        // Create Project Button
+        const createProjectBtn = document.getElementById('createProjectBtn');
+        if (createProjectBtn) {
+            createProjectBtn.onclick = () => {
+                editingProjectId = null;
+                document.getElementById('modalTitle').textContent = 'Create New Project';
+                document.getElementById('projectNameInput').value = '';
+                document.getElementById('projectDescInput').value = '';
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('projectStartDate').value = today;
+                document.getElementById('projectDeadline').value = '';
+                document.getElementById('projectModal').classList.add('active');
+            };
+        }
+        
+        // Close Modal
+        const closeModal = () => {
+            document.getElementById('projectModal').classList.remove('active');
+        };
+        
+        AppState.attachButton('closeProjectModal', closeModal);
+        AppState.attachButton('cancelProjectBtn', closeModal);
+        
+        // Save Project
+        const saveProjectBtn = document.getElementById('saveProjectBtn');
+        if (saveProjectBtn) {
+            saveProjectBtn.onclick = () => {
+                const name = document.getElementById('projectNameInput').value.trim();
+                const desc = document.getElementById('projectDescInput').value.trim();
+                const startDate = document.getElementById('projectStartDate').value;
+                const deadline = document.getElementById('projectDeadline').value;
+                
+                if (!name || !startDate || !deadline) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+                
+                if (new Date(deadline) <= new Date(startDate)) {
+                    alert('Deadline must be after start date');
+                    return;
+                }
+                
+                if (editingProjectId) {
+                    // Update existing project
+                    const project = AppState.projects.find(p => p.id === editingProjectId);
+                    if (project) {
+                        project.name = name;
+                        project.description = desc;
+                        project.startDate = startDate;
+                        project.deadline = deadline;
+                    }
+                } else {
+                    // Create new project
+                    const project = {
+                        id: Date.now().toString(),
+                        name,
+                        description: desc,
+                        startDate,
+                        deadline,
+                        tasks: [],
+                        createdAt: new Date().toISOString()
+                    };
+                    AppState.projects.push(project);
+                }
+                
+                AppState.saveToStorage();
+                closeModal();
+                AppState.renderProjectsList();
+            };
+        }
+        
+        // Render Projects List
+        AppState.renderProjectsList = () => {
+            const projectsList = document.getElementById('projectsList');
+            if (!projectsList) return;
+            
+            projectsList.innerHTML = '';
+            
+            if (AppState.projects.length === 0) {
+                projectsList.innerHTML = `
+                    <div class="empty-state">
+                        <p>No projects yet. Create your first long-term project!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            AppState.projects.forEach((project, index) => {
+                const projectCard = document.createElement('div');
+                projectCard.className = 'project-card';
+                projectCard.style.animationDelay = `${index * 0.1}s`;
+                projectCard.style.animation = 'fadeInUp 0.5s ease backwards';
+                
+                const today = new Date();
+                const deadline = new Date(project.deadline);
+                const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+                
+                const totalTasks = project.tasks.length;
+                const completedTasks = project.tasks.filter(t => t.completed).length;
+                const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                
+                let statusClass = 'status-active';
+                let statusText = 'Active';
+                let statusIcon = '✓';
+                if (daysRemaining < 0) {
+                    statusClass = 'status-overdue';
+                    statusText = 'Overdue';
+                    statusIcon = '⚠';
+                } else if (daysRemaining <= 7) {
+                    statusClass = 'status-urgent';
+                    statusText = 'Urgent';
+                    statusIcon = '⚡';
+                }
+                
+                projectCard.innerHTML = `
+                    <div class="project-card-header">
+                        <h3 class="project-card-title">${project.name}</h3>
+                        <span class="project-status ${statusClass}">${statusIcon} ${statusText}</span>
+                    </div>
+                    ${project.description ? `<p class="project-card-desc">${project.description}</p>` : ''}
+                    <div class="project-card-meta">
+                        <div class="project-meta-item">
+                            <span class="meta-icon">📅</span>
+                            <span>Deadline: ${new Date(project.deadline).toLocaleDateString()}</span>
+                        </div>
+                        <div class="project-meta-item">
+                            <span class="meta-icon">⏰</span>
+                            <span class="${daysRemaining <= 7 && daysRemaining >= 0 ? 'text-urgent' : daysRemaining < 0 ? 'text-overdue' : ''}">${daysRemaining >= 0 ? daysRemaining + ' days left' : Math.abs(daysRemaining) + ' days overdue'}</span>
+                        </div>
+                    </div>
+                    <div class="project-card-progress">
+                        <div class="progress-info">
+                            <span class="progress-label">Progress</span>
+                            <span class="progress-value">${progress}%</span>
+                        </div>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-small" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="progress-task-count">
+                            <span>${completedTasks} of ${totalTasks} tasks completed</span>
+                        </div>
+                    </div>
+                    <div class="project-card-actions">
+                        <button class="btn-primary view-project-btn" data-project-id="${project.id}">
+                            <span>👁</span> View
+                        </button>
+                        <button class="btn-secondary edit-project-btn" data-project-id="${project.id}">
+                            <span>✏️</span> Edit
+                        </button>
+                        <button class="btn-danger delete-project-btn" data-project-id="${project.id}">
+                            <span>🗑</span> Delete
+                        </button>
+                    </div>
+                `;
+                
+                // Add click animation
+                projectCard.onclick = (e) => {
+                    if (!e.target.closest('button')) {
+                        AppState.viewProject(project.id);
+                    }
+                };
+                
+                // View Project
+                projectCard.querySelector('.view-project-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    projectCard.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        AppState.viewProject(project.id);
+                    }, 150);
+                };
+                
+                // Edit Project
+                projectCard.querySelector('.edit-project-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    editingProjectId = project.id;
+                    document.getElementById('modalTitle').textContent = 'Edit Project';
+                    document.getElementById('projectNameInput').value = project.name;
+                    document.getElementById('projectDescInput').value = project.description || '';
+                    document.getElementById('projectStartDate').value = project.startDate;
+                    document.getElementById('projectDeadline').value = project.deadline;
+                    document.getElementById('projectModal').classList.add('active');
+                };
+                
+                // Delete Project
+                projectCard.querySelector('.delete-project-btn').onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Are you sure you want to delete "${project.name}"?`)) {
+                        projectCard.style.animation = 'fadeOut 0.3s ease forwards';
+                        setTimeout(() => {
+                            AppState.projects = AppState.projects.filter(p => p.id !== project.id);
+                            AppState.saveToStorage();
+                            AppState.renderProjectsList();
+                        }, 300);
+                    }
+                };
+                
+                projectsList.appendChild(projectCard);
+            });
+        };
+        
+        // View Project Detail
+        AppState.viewProject = (projectId) => {
+            const project = AppState.projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            AppState.currentProjectId = projectId;
+            
+            const detailView = document.getElementById('projectDetailView');
+            const projectsList = document.getElementById('projectsList');
+            const projectsHeader = document.querySelector('.projects-header');
+            
+            detailView.style.display = 'block';
+            if (projectsList) projectsList.style.display = 'none';
+            if (projectsHeader) projectsHeader.style.display = 'none';
+            
+            // Update project info
+            document.getElementById('projectDetailTitle').textContent = project.name;
+            document.getElementById('projectDetailStartDate').textContent = new Date(project.startDate).toLocaleDateString();
+            document.getElementById('projectDetailDeadline').textContent = new Date(project.deadline).toLocaleDateString();
+            
+            const today = new Date();
+            const deadline = new Date(project.deadline);
+            const daysRemaining = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+            const daysRemainingEl = document.getElementById('projectDaysRemaining');
+            daysRemainingEl.textContent = daysRemaining >= 0 ? `${daysRemaining} days` : `${Math.abs(daysRemaining)} days overdue`;
+            daysRemainingEl.className = daysRemaining < 0 ? 'meta-value days-remaining overdue' : daysRemaining <= 7 ? 'meta-value days-remaining urgent' : 'meta-value days-remaining';
+            
+            AppState.renderProjectTasks(project);
+        };
+        
+        // Back to Projects List
+        AppState.attachButton('backToProjectsList', () => {
+            const detailView = document.getElementById('projectDetailView');
+            const projectsList = document.getElementById('projectsList');
+            const projectsHeader = document.querySelector('.projects-header');
+            
+            detailView.style.display = 'none';
+            if (projectsList) projectsList.style.display = 'block';
+            if (projectsHeader) projectsHeader.style.display = 'flex';
+        });
+        
+        // Render Project Tasks
+        AppState.renderProjectTasks = (project) => {
+            const tasksList = document.getElementById('projectTasksList');
+            if (!tasksList) return;
+            
+            tasksList.innerHTML = '';
+            
+            if (project.tasks.length === 0) {
+                tasksList.innerHTML = '<p class="empty-state-small">No tasks yet. Add your first task!</p>';
+            } else {
+                project.tasks.forEach((task, index) => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `project-task-item ${task.completed ? 'completed' : ''}`;
+                    taskEl.style.animationDelay = `${index * 0.05}s`;
+                    taskEl.dataset.taskId = task.id;
+                    
+                    const taskDate = task.date ? (task.date.split('T')[0] || task.date) : new Date(task.createdAt).toISOString().split('T')[0];
+                    const priority = task.priority || 'normal';
+                    const significance = task.significance || 'normal';
+                    
+                    // Get significance label
+                    let significanceLabel = 'Normal';
+                    let significanceIcon = '✓';
+                    if (significance === 'critical') {
+                        significanceLabel = 'Critical';
+                        significanceIcon = '🔥';
+                    } else if (significance === 'important') {
+                        significanceLabel = 'Important';
+                        significanceIcon = '⭐';
+                    }
+                    
+                    taskEl.innerHTML = `
+                        <div class="task-checkbox">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} data-task-id="${task.id}" id="task-${task.id}">
+                            <label for="task-${task.id}" class="checkbox-label"></label>
+                        </div>
+                        <div class="task-content">
+                            <span class="task-text">${task.text}</span>
+                            <div class="task-meta-row">
+                                <span class="task-date">${new Date(taskDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                <span class="task-significance-badge ${significance}">${significanceIcon} ${significanceLabel}</span>
+                            </div>
+                        </div>
+                        <button class="task-delete-btn" data-task-id="${task.id}" title="Delete task">×</button>
+                    `;
+                    
+                    // Toggle completion with animation
+                    const checkbox = taskEl.querySelector('input[type="checkbox"]');
+                    checkbox.onchange = () => {
+                        task.completed = checkbox.checked;
+                        taskEl.classList.toggle('completed', task.completed);
+                        
+                        // Add completion animation
+                        if (task.completed) {
+                            taskEl.style.animation = 'taskComplete 0.5s ease';
+                        }
+                        
+                        AppState.saveToStorage();
+                        AppState.updateProjectProgress(project.id);
+                        
+                        // Re-render after a delay for smooth animation
+                        setTimeout(() => {
+                            AppState.renderProjectTasks(project);
+                        }, 500);
+                    };
+                    
+                    // Delete task with animation
+                    taskEl.querySelector('.task-delete-btn').onclick = (e) => {
+                        e.stopPropagation();
+                        taskEl.style.animation = 'taskDelete 0.3s ease forwards';
+                        setTimeout(() => {
+                            project.tasks = project.tasks.filter(t => t.id !== task.id);
+                            AppState.saveToStorage();
+                            AppState.updateProjectProgress(project.id);
+                            AppState.renderProjectTasks(project);
+                            if (AppState.renderDailyTasks) AppState.renderDailyTasks();
+                            if (AppState.renderTaskCalendar) AppState.renderTaskCalendar();
+                        }, 300);
+                    };
+                    
+                    // Swipe to complete/delete
+                    let touchStartX = 0;
+                    let touchStartY = 0;
+                    
+                    taskEl.ontouchstart = (e) => {
+                        touchStartX = e.touches[0].clientX;
+                        touchStartY = e.touches[0].clientY;
+                    };
+                    
+                    taskEl.ontouchend = (e) => {
+                        if (e.target.closest('button, input')) return;
+                        const touchEndX = e.changedTouches[0].clientX;
+                        const touchEndY = e.changedTouches[0].clientY;
+                        const deltaX = touchEndX - touchStartX;
+                        const deltaY = touchEndY - touchStartY;
+                        
+                        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                            if (deltaX > 0) {
+                                // Swipe right - complete task
+                                if (!task.completed) {
+                                    checkbox.checked = true;
+                                    checkbox.dispatchEvent(new Event('change'));
+                                }
+                            } else {
+                                // Swipe left - delete task
+                                taskEl.querySelector('.task-delete-btn').click();
+                            }
+                        }
+                    };
+                    
+                    tasksList.appendChild(taskEl);
+                });
+            }
+            
+            // Update progress
+            AppState.updateProjectProgress(project.id);
+        };
+        
+        // Update Project Progress
+        AppState.updateProjectProgress = (projectId) => {
+            const project = AppState.projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const totalTasks = project.tasks.length;
+            const completedTasks = project.tasks.filter(t => t.completed).length;
+            const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            document.getElementById('projectProgressPercent').textContent = progress + '%';
+            document.getElementById('projectProgressBar').style.width = progress + '%';
+            document.getElementById('projectTasksCompleted').textContent = completedTasks;
+            document.getElementById('projectTasksTotal').textContent = totalTasks;
+        };
+        
+        // Task Tabs Switching
+        const taskTabs = document.querySelectorAll('.task-tab');
+        taskTabs.forEach(tab => {
+            tab.onclick = () => {
+                const tabName = tab.dataset.tab;
+                taskTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const contents = document.querySelectorAll('.task-tab-content');
+                contents.forEach(c => c.classList.remove('active'));
+                
+                if (tabName === 'all') {
+                    const allTab = document.getElementById('allTasksTab');
+                    if (allTab) allTab.classList.add('active');
+                } else if (tabName === 'daily') {
+                    const dailyTab = document.getElementById('dailyTasksTab');
+                    if (dailyTab) {
+                        dailyTab.classList.add('active');
+                        AppState.renderDailyTasks();
+                    }
+                } else if (tabName === 'calendar') {
+                    const calendarTab = document.getElementById('calendarTasksTab');
+                    if (calendarTab) {
+                        calendarTab.classList.add('active');
+                        AppState.renderTaskCalendar();
+                    }
+                }
+            };
+        });
+        
+        // Significance Selector
+        let selectedSignificance = 'normal';
+        const significanceButtons = document.querySelectorAll('.significance-btn');
+        significanceButtons.forEach(btn => {
+            btn.onclick = () => {
+                significanceButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedSignificance = btn.dataset.significance;
+            };
+        });
+        
+        // Add Task Button
+        AppState.attachButton('addProjectTaskBtn', () => {
+            const form = document.getElementById('addTaskForm');
+            const isVisible = form.style.display !== 'none';
+            if (isVisible) {
+                form.style.animation = 'slideUp 0.3s ease forwards';
+                setTimeout(() => {
+                    form.style.display = 'none';
+                    form.style.animation = '';
+                }, 300);
+            } else {
+                form.style.display = 'block';
+                form.style.animation = 'slideDown 0.3s ease';
+                // Reset significance to normal
+                significanceButtons.forEach(b => b.classList.remove('active'));
+                const normalBtn = document.querySelector('.significance-btn[data-significance="normal"]');
+                if (normalBtn) normalBtn.classList.add('active');
+                selectedSignificance = 'normal';
+                setTimeout(() => {
+                    const input = document.getElementById('projectTaskInput');
+                    if (input) input.focus();
+                }, 100);
+            }
+        });
+        
+        // Save Project Task
+        AppState.attachButton('saveProjectTaskBtn', () => {
+            const input = document.getElementById('projectTaskInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            if (!AppState.currentProjectId) return;
+            const project = AppState.projects.find(p => p.id === AppState.currentProjectId);
+            if (!project) return;
+            
+            // Get selected significance
+            const significance = selectedSignificance || 'normal';
+            
+            // Calculate date within project timeline based on significance
+            // If adding from daily view, use that date; otherwise calculate
+            let taskDate;
+            if (AppState.dailyTaskDate) {
+                taskDate = AppState.dailyTaskDate;
+                AppState.dailyTaskDate = null; // Clear after use
+            } else {
+                taskDate = AppState.calculateTaskDate(project, significance);
+            }
+            const priority = AppState.getPriorityFromSignificance(significance);
+            
+            const task = {
+                id: Date.now().toString(),
+                text,
+                date: taskDate,
+                priority: priority,
+                significance: significance,
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+            
+            project.tasks.push(task);
+            AppState.saveToStorage();
+            if (input) input.value = '';
+            
+            const form = document.getElementById('addTaskForm');
+            if (form) {
+                form.style.animation = 'slideUp 0.3s ease forwards';
+                setTimeout(() => {
+                    form.style.display = 'none';
+                    form.style.animation = '';
+                }, 300);
+            }
+            
+            AppState.renderProjectTasks(project);
+            if (AppState.renderDailyTasks) AppState.renderDailyTasks();
+            if (AppState.renderTaskCalendar) AppState.renderTaskCalendar();
+            
+            // Show success feedback
+            const addBtn = document.getElementById('addProjectTaskBtn');
+            if (addBtn) {
+                const originalText = addBtn.textContent;
+                addBtn.textContent = '✓ Added!';
+                addBtn.style.background = 'var(--primary)';
+                setTimeout(() => {
+                    addBtn.textContent = originalText;
+                    addBtn.style.background = '';
+                }, 2000);
+            }
+        });
+        
+        // Cancel Add Task
+        AppState.attachButton('cancelProjectTaskBtn', () => {
+            const input = document.getElementById('projectTaskInput');
+            if (input) input.value = '';
+            // Reset significance to normal
+            significanceButtons.forEach(b => b.classList.remove('active'));
+            const normalBtn = document.querySelector('.significance-btn[data-significance="normal"]');
+            if (normalBtn) normalBtn.classList.add('active');
+            selectedSignificance = 'normal';
+            const form = document.getElementById('addTaskForm');
+            if (form) {
+                form.style.animation = 'slideUp 0.3s ease forwards';
+                setTimeout(() => {
+                    form.style.display = 'none';
+                    form.style.animation = '';
+                }, 300);
+            }
+        });
+        
+        // Daily View Functions
+        let selectedDate = new Date().toISOString().split('T')[0];
+        
+        AppState.renderDailyTasks = () => {
+            if (!AppState.currentProjectId) return;
+            const project = AppState.projects.find(p => p.id === AppState.currentProjectId);
+            if (!project) return;
+            
+            const dateInput = document.getElementById('selectedDate');
+            if (dateInput) {
+                dateInput.value = selectedDate;
+            }
+            
+            const dailyTasks = project.tasks.filter(t => {
+                const taskDate = t.date ? (t.date.split('T')[0] || t.date) : new Date(t.createdAt).toISOString().split('T')[0];
+                return taskDate === selectedDate;
+            });
+            
+            const dailyTasksList = document.getElementById('dailyTasksList');
+            const dailyTasksCount = document.getElementById('dailyTasksCount');
+            const dailyCompletedCount = document.getElementById('dailyCompletedCount');
+            const dailyProgressPercent = document.getElementById('dailyProgressPercent');
+            
+            if (dailyTasksCount) dailyTasksCount.textContent = dailyTasks.length;
+            const completed = dailyTasks.filter(t => t.completed).length;
+            if (dailyCompletedCount) dailyCompletedCount.textContent = completed;
+            const progress = dailyTasks.length > 0 ? Math.round((completed / dailyTasks.length) * 100) : 0;
+            if (dailyProgressPercent) dailyProgressPercent.textContent = progress + '%';
+            
+            if (dailyTasksList) {
+                dailyTasksList.innerHTML = '';
+                
+                if (dailyTasks.length === 0) {
+                    dailyTasksList.innerHTML = `
+                        <div class="empty-daily-state">
+                            <p>No tasks for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                            <button class="btn-primary" id="addDailyTaskBtnInline">+ Add Task</button>
+                        </div>
+                    `;
+                    AppState.attachButton('addDailyTaskBtnInline', () => {
+                        AppState.dailyTaskDate = selectedDate;
+                        document.querySelector('.task-tab[data-tab="all"]').click();
+                        document.getElementById('addProjectTaskBtn').click();
+                    });
+                } else {
+                    dailyTasks.forEach((task, index) => {
+                        const taskEl = document.createElement('div');
+                        taskEl.className = `project-task-item daily-task-item ${task.completed ? 'completed' : ''} ${task.priority === 'high' ? 'high-priority' : task.priority === 'low' ? 'low-priority' : ''}`;
+                        taskEl.style.animationDelay = `${index * 0.05}s`;
+                        taskEl.dataset.taskId = task.id;
+                        
+                        const significance = task.significance || 'normal';
+                        taskEl.innerHTML = `
+                            <div class="task-checkbox">
+                                <input type="checkbox" ${task.completed ? 'checked' : ''} data-task-id="${task.id}" id="daily-task-${task.id}">
+                            </div>
+                            <div class="task-content">
+                                <span class="task-text">${task.text}</span>
+                                <div class="task-meta-row">
+                                    <span class="task-significance-badge ${significance}">${significance === 'critical' ? '🔥 Critical' : significance === 'important' ? '⭐ Important' : '✓ Normal'}</span>
+                                    <span class="task-time">${new Date(task.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                            </div>
+                            <button class="task-delete-btn" data-task-id="${task.id}">×</button>
+                        `;
+                        
+                        const checkbox = taskEl.querySelector('input[type="checkbox"]');
+                        checkbox.onchange = () => {
+                            task.completed = checkbox.checked;
+                            taskEl.classList.toggle('completed', task.completed);
+                            AppState.saveToStorage();
+                            AppState.updateProjectProgress(project.id);
+                            AppState.renderDailyTasks();
+                            AppState.renderProjectTasks(project);
+                        };
+                        
+                        taskEl.querySelector('.task-delete-btn').onclick = (e) => {
+                            e.stopPropagation();
+                            taskEl.style.animation = 'taskDelete 0.3s ease forwards';
+                            setTimeout(() => {
+                                project.tasks = project.tasks.filter(t => t.id !== task.id);
+                                AppState.saveToStorage();
+                                AppState.updateProjectProgress(project.id);
+                                AppState.renderDailyTasks();
+                                AppState.renderProjectTasks(project);
+                            }, 300);
+                        };
+                        
+                        dailyTasksList.appendChild(taskEl);
+                    });
+                }
+            }
+        };
+        
+        // Date Navigation
+        AppState.attachButton('prevDayBtn', () => {
+            const date = new Date(selectedDate);
+            date.setDate(date.getDate() - 1);
+            selectedDate = date.toISOString().split('T')[0];
+            AppState.renderDailyTasks();
+        });
+        
+        AppState.attachButton('nextDayBtn', () => {
+            const date = new Date(selectedDate);
+            date.setDate(date.getDate() + 1);
+            selectedDate = date.toISOString().split('T')[0];
+            AppState.renderDailyTasks();
+        });
+        
+        AppState.attachButton('todayDateBtn', () => {
+            selectedDate = new Date().toISOString().split('T')[0];
+            AppState.renderDailyTasks();
+        });
+        
+        const selectedDateInput = document.getElementById('selectedDate');
+        if (selectedDateInput) {
+            selectedDateInput.onchange = () => {
+                selectedDate = selectedDateInput.value;
+                AppState.renderDailyTasks();
+            };
+        }
+        
+        // Add Daily Task Button
+        AppState.attachButton('addDailyTaskBtn', () => {
+            AppState.dailyTaskDate = selectedDate;
+            document.querySelector('.task-tab[data-tab="all"]').click();
+            document.getElementById('addProjectTaskBtn').click();
+        });
+        
+        // Task Calendar
+        let taskCalendarMonth = new Date().getMonth();
+        let taskCalendarYear = new Date().getFullYear();
+        
+        AppState.renderTaskCalendar = () => {
+            if (!AppState.currentProjectId) return;
+            const project = AppState.projects.find(p => p.id === AppState.currentProjectId);
+            if (!project) return;
+            
+            const grid = document.getElementById('taskCalendarGrid');
+            const monthDisplay = document.getElementById('calendarMonthDisplay');
+            if (!grid || !monthDisplay) return;
+            
+            const firstDay = new Date(taskCalendarYear, taskCalendarMonth, 1);
+            const lastDay = new Date(taskCalendarYear, taskCalendarMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            monthDisplay.textContent = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            grid.innerHTML = '';
+            
+            // Day headers
+            ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'task-calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // Empty cells
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'task-calendar-day empty';
+                grid.appendChild(empty);
+            }
+            
+            // Days
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.className = 'task-calendar-day';
+                
+                const dateKey = `${taskCalendarYear}-${String(taskCalendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayTasks = project.tasks.filter(t => {
+                    const taskDate = t.date ? (t.date.split('T')[0] || t.date) : new Date(t.createdAt).toISOString().split('T')[0];
+                    return taskDate === dateKey;
+                });
+                
+                dayEl.innerHTML = `
+                    <div class="calendar-day-number">${day}</div>
+                    <div class="calendar-day-tasks">
+                        ${dayTasks.slice(0, 3).map(t => `<span class="task-dot ${t.completed ? 'completed' : t.priority === 'high' ? 'high-priority' : 'normal-priority'}"></span>`).join('')}
+                        ${dayTasks.length > 3 ? `<span class="task-more">+${dayTasks.length - 3}</span>` : ''}
+                    </div>
+                `;
+                
+                if (taskCalendarYear === today.getFullYear() && taskCalendarMonth === today.getMonth() && day === today.getDate()) {
+                    dayEl.classList.add('today');
+                }
+                
+                if (dayTasks.length > 0) {
+                    dayEl.classList.add('has-tasks');
+                    dayEl.onclick = () => {
+                        selectedDate = dateKey;
+                        document.querySelector('.task-tab[data-tab="daily"]').click();
+                        AppState.renderDailyTasks();
+                    };
+                }
+                
+                grid.appendChild(dayEl);
+            }
+        };
+        
+        AppState.attachButton('prevMonthTaskBtn', () => {
+            taskCalendarMonth--;
+            if (taskCalendarMonth < 0) {
+                taskCalendarMonth = 11;
+                taskCalendarYear--;
+            }
+            AppState.renderTaskCalendar();
+        });
+        
+        AppState.attachButton('nextMonthTaskBtn', () => {
+            taskCalendarMonth++;
+            if (taskCalendarMonth > 11) {
+                taskCalendarMonth = 0;
+                taskCalendarYear++;
+            }
+            AppState.renderTaskCalendar();
+        });
+        
+        // Initial render
+        AppState.renderProjectsList();
+    },
+    
     initParticleCanvas() {
         const canvas = document.getElementById('particleCanvas');
         if (!canvas) return;
@@ -1815,6 +2577,8 @@ const AppState = {
             if (AppState.updateInsights) AppState.updateInsights();
         } else if (AppState.currentSection === 'documentation') {
             if (AppState.renderDocumentation) AppState.renderDocumentation();
+        } else if (AppState.currentSection === 'projects') {
+            if (AppState.renderProjectsList) AppState.renderProjectsList();
         }
     },
     

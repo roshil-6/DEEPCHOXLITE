@@ -10,33 +10,6 @@
     <!-- Background Canvas -->
     <canvas id="particleCanvas"></canvas>
 
-    <!-- Floating Navigation -->
-    <div class="floating-nav">
-        <div class="nav-dots" id="navDots"></div>
-        <div class="nav-arrows">
-            <button class="nav-arrow nav-arrow-prev" id="navPrev" aria-label="Previous section">
-                <span>‹</span>
-            </button>
-            <button class="nav-arrow nav-arrow-next" id="navNext" aria-label="Next section">
-                <span>›</span>
-            </button>
-        </div>
-    </div>
-
-    <!-- Floating Section Menu -->
-    <button class="floating-menu-btn" id="floatingMenuBtn" aria-label="Open menu">
-        <span class="menu-icon">☰</span>
-    </button>
-
-    <div class="floating-menu" id="floatingMenu">
-        <div class="menu-header">
-            <h3>Navigate</h3>
-            <button class="menu-close" id="menuClose">×</button>
-        </div>
-        <div class="menu-items" id="menuItems">
-            <!-- Menu items will be generated dynamically -->
-        </div>
-    </div>
 
     <!-- Main Content -->
     <main class="main-content">
@@ -203,6 +176,16 @@
                         <p class="feature-card-desc">Save and review your work</p>
                         <div class="feature-card-preview" id="featureDocsPreview">
                             <span class="preview-value" id="featureDocsCount">0</span> entries
+                        </div>
+                    </div>
+
+                    <!-- Projects Section -->
+                    <div class="feature-card" data-section="projects">
+                        <div class="feature-card-icon">🎯</div>
+                        <h3 class="feature-card-title">Projects</h3>
+                        <p class="feature-card-desc">Track long-term projects</p>
+                        <div class="feature-card-preview" id="featureProjectsPreview">
+                            <span class="preview-value" id="featureProjectsCount">0</span> projects
                         </div>
                     </div>
                 </div>
@@ -696,6 +679,223 @@
                     <h3 class="subsection-title">Past Documentation</h3>
                     <div id="docHistoryList" class="doc-history-list">
                         <!-- Past documentation entries will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 8: PROJECTS -->
+        <section id="projects" class="section">
+            <div class="section-inner">
+                <div class="projects-header">
+                    <h2 class="section-title">Long-Term Projects</h2>
+                    <button id="createProjectBtn" class="btn-primary">+ New Project</button>
+                </div>
+                
+                <!-- Projects List -->
+                <div id="projectsList" class="projects-list">
+                    <!-- Projects will be rendered here -->
+                </div>
+                
+                <!-- Create/Edit Project Modal -->
+                <div id="projectModal" class="project-modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 id="modalTitle">Create New Project</h3>
+                            <button id="closeProjectModal" class="close-btn">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label>Project Name</label>
+                                <input type="text" id="projectNameInput" class="form-input" placeholder="Enter project name">
+                            </div>
+                            <div class="form-group">
+                                <label>Description (Optional)</label>
+                                <textarea id="projectDescInput" class="form-textarea" placeholder="Describe your project..."></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Start Date</label>
+                                    <input type="date" id="projectStartDate" class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label>Deadline</label>
+                                    <input type="date" id="projectDeadline" class="form-input">
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button id="saveProjectBtn" class="btn-primary">Save Project</button>
+                                <button id="cancelProjectBtn" class="btn-secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project Detail View -->
+                <div id="projectDetailView" class="project-detail-view" style="display: none;">
+                    <div class="project-detail-header">
+                        <button id="backToProjectsList" class="back-btn">← Back</button>
+                        <h2 id="projectDetailTitle" class="project-detail-title"></h2>
+                    </div>
+                    
+                    <div class="project-detail-content">
+                        <!-- Project Info Card -->
+                        <div class="project-info-card">
+                            <div class="project-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Start Date</span>
+                                    <span id="projectDetailStartDate" class="meta-value"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Deadline</span>
+                                    <span id="projectDetailDeadline" class="meta-value"></span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Days Remaining</span>
+                                    <span id="projectDaysRemaining" class="meta-value days-remaining"></span>
+                                </div>
+                            </div>
+                            <div class="project-progress-section">
+                                <div class="progress-header">
+                                    <span>Overall Progress</span>
+                                    <span id="projectProgressPercent" class="progress-percent">0%</span>
+                                </div>
+                                <div class="progress-bar-large">
+                                    <div id="projectProgressBar" class="progress-fill-large"></div>
+                                </div>
+                                <div class="progress-stats">
+                                    <span id="projectTasksCompleted">0</span> of <span id="projectTasksTotal">0</span> tasks completed
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Daily Tasks Section -->
+                        <div class="project-tasks-section">
+                            <!-- Task Tabs -->
+                            <div class="task-tabs">
+                                <button class="task-tab active" data-tab="all">All Tasks</button>
+                                <button class="task-tab" data-tab="daily">Daily View</button>
+                                <button class="task-tab" data-tab="calendar">Calendar</button>
+                            </div>
+                            
+                            <!-- All Tasks Tab -->
+                            <div class="task-tab-content active" id="allTasksTab">
+                                <div class="section-header-row">
+                                    <h3>All Tasks</h3>
+                                    <button id="addProjectTaskBtn" class="btn-primary">+ Add Task</button>
+                                </div>
+                                
+                                <!-- Add Task Form -->
+                                <div id="addTaskForm" class="add-task-form" style="display: none;">
+                                    <div class="form-group">
+                                        <label>Task Description</label>
+                                        <textarea id="projectTaskInput" class="form-textarea" placeholder="Describe the task... (More details help determine priority)" rows="3"></textarea>
+                                    </div>
+                                    <div class="task-significance-selector">
+                                        <label>Task Significance</label>
+                                        <div class="significance-options">
+                                            <button class="significance-btn" data-significance="critical">
+                                                <span class="significance-icon">🔥</span>
+                                                <span class="significance-label">Critical</span>
+                                                <span class="significance-desc">Must complete</span>
+                                            </button>
+                                            <button class="significance-btn" data-significance="important">
+                                                <span class="significance-icon">⭐</span>
+                                                <span class="significance-label">Important</span>
+                                                <span class="significance-desc">Should complete</span>
+                                            </button>
+                                            <button class="significance-btn active" data-significance="normal">
+                                                <span class="significance-icon">✓</span>
+                                                <span class="significance-label">Normal</span>
+                                                <span class="significance-desc">Nice to have</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="form-info">
+                                        <span class="info-icon">ℹ️</span>
+                                        <span>Task will be automatically scheduled within project timeline</span>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button id="saveProjectTaskBtn" class="btn-primary">Add Task</button>
+                                        <button id="cancelProjectTaskBtn" class="btn-secondary">Cancel</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tasks List -->
+                                <div id="projectTasksList" class="project-tasks-list">
+                                    <!-- Tasks will be rendered here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Daily View Tab -->
+                            <div class="task-tab-content" id="dailyTasksTab">
+                                <div class="daily-view-header">
+                                    <h3>Daily Tasks</h3>
+                                    <div class="date-selector">
+                                        <button id="prevDayBtn" class="date-nav-btn">‹</button>
+                                        <input type="date" id="selectedDate" class="date-input">
+                                        <button id="nextDayBtn" class="date-nav-btn">›</button>
+                                        <button id="todayDateBtn" class="btn-secondary">Today</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="daily-stats">
+                                    <div class="daily-stat-item">
+                                        <span class="stat-label">Tasks</span>
+                                        <span id="dailyTasksCount" class="stat-value">0</span>
+                                    </div>
+                                    <div class="daily-stat-item">
+                                        <span class="stat-label">Completed</span>
+                                        <span id="dailyCompletedCount" class="stat-value">0</span>
+                                    </div>
+                                    <div class="daily-stat-item">
+                                        <span class="stat-label">Progress</span>
+                                        <span id="dailyProgressPercent" class="stat-value">0%</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="daily-tasks-container">
+                                    <div id="dailyTasksList" class="daily-tasks-list">
+                                        <!-- Daily tasks will be rendered here -->
+                                    </div>
+                                </div>
+                                
+                                <div class="add-daily-task-section">
+                                    <button id="addDailyTaskBtn" class="btn-primary">+ Add Task for This Day</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Calendar Tab -->
+                            <div class="task-tab-content" id="calendarTasksTab">
+                                <div class="calendar-view-header">
+                                    <h3>Task Calendar</h3>
+                                    <div class="calendar-month-nav">
+                                        <button id="prevMonthTaskBtn" class="date-nav-btn">‹</button>
+                                        <span id="calendarMonthDisplay" class="month-display"></span>
+                                        <button id="nextMonthTaskBtn" class="date-nav-btn">›</button>
+                                    </div>
+                                </div>
+                                
+                                <div id="taskCalendarGrid" class="task-calendar-grid">
+                                    <!-- Calendar will be rendered here -->
+                                </div>
+                                
+                                <div class="calendar-legend">
+                                    <div class="legend-item">
+                                        <span class="legend-dot high-priority"></span>
+                                        <span>High Priority</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-dot normal-priority"></span>
+                                        <span>Normal</span>
+                                    </div>
+                                    <div class="legend-item">
+                                        <span class="legend-dot completed"></span>
+                                        <span>Completed</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
